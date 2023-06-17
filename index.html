@@ -9,34 +9,256 @@
 </head>
 <body>
 <tw-story><noscript><tw-noscript>JavaScript needs to be enabled to play Metal X Story.</tw-noscript></noscript></tw-story>
-<tw-storydata name="Metal X Story" startnode="9" creator="Twine" creator-version="2.6.2" format="Harlowe" format-version="3.3.5" ifid="9DCE4569-47A5-4D56-9673-34BC5CC02EB6" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Creation of All" tags="" position="600,300" size="100,100">Creation of All
+<tw-storydata name="Metal X Story" startnode="9" creator="Twine" creator-version="2.6.2" format="Harlowe" format-version="3.3.5" ifid="9DCE4569-47A5-4D56-9673-34BC5CC02EB6" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript">// oneko.js: https://github.com/adryd325/oneko.js
+
+(function oneko() {
+  const nekoEl = document.createElement("div");
+  let nekoPosX = 32;
+  let nekoPosY = 32;
+  let mousePosX = 0;
+  let mousePosY = 0;
+  const isReduced = window.matchMedia(`(prefers-reduced-motion: reduce)`) === true || window.matchMedia(`(prefers-reduced-motion: reduce)`).matches === true;
+  if (isReduced) {
+    return;
+  }
+  
+  let frameCount = 0;
+  let idleTime = 0;
+  let idleAnimation = null;
+  let idleAnimationFrame = 0;
+  const nekoSpeed = 10;
+  const spriteSets = {
+    idle: [[-3, -3]],
+    alert: [[-7, -3]],
+    scratchSelf: [
+      [-5, 0],
+      [-6, 0],
+      [-7, 0],
+    ],
+    scratchWallN: [
+      [0, 0],
+      [0, -1],
+    ],
+    scratchWallS: [
+      [-7, -1],
+      [-6, -2],
+    ],
+    scratchWallE: [
+      [-2, -2],
+      [-2, -3],
+    ],
+    scratchWallW: [
+      [-4, 0],
+      [-4, -1],
+    ],
+    tired: [[-3, -2]],
+    sleeping: [
+      [-2, 0],
+      [-2, -1],
+    ],
+    N: [
+      [-1, -2],
+      [-1, -3],
+    ],
+    NE: [
+      [0, -2],
+      [0, -3],
+    ],
+    E: [
+      [-3, 0],
+      [-3, -1],
+    ],
+    SE: [
+      [-5, -1],
+      [-5, -2],
+    ],
+    S: [
+      [-6, -3],
+      [-7, -2],
+    ],
+    SW: [
+      [-5, -3],
+      [-6, -1],
+    ],
+    W: [
+      [-4, -2],
+      [-4, -3],
+    ],
+    NW: [
+      [-1, 0],
+      [-1, -1],
+    ],
+  };
+
+  function create() {
+    nekoEl.id = "oneko";
+    nekoEl.style.width = "32px";
+    nekoEl.style.height = "32px";
+    nekoEl.style.position = "fixed";
+    nekoEl.style.pointerEvents = "none";
+    nekoEl.style.backgroundImage = "url('./oneko.gif')";
+    nekoEl.style.imageRendering = "pixelated";
+    nekoEl.style.left = `${nekoPosX - 16}px`;
+    nekoEl.style.top = `${nekoPosY - 16}px`;
+    nekoEl.style.zIndex = "999";
+
+    document.body.appendChild(nekoEl);
+
+    document.onmousemove = (event) => {
+      mousePosX = event.clientX;
+      mousePosY = event.clientY;
+    };
+
+    window.onekoInterval = setInterval(frame, 100);
+  }
+
+  function setSprite(name, frame) {
+    const sprite = spriteSets[name][frame % spriteSets[name].length];
+    nekoEl.style.backgroundPosition = `${sprite[0] * 32}px ${sprite[1] * 32}px`;
+  }
+
+  function resetIdleAnimation() {
+    idleAnimation = null;
+    idleAnimationFrame = 0;
+  }
+
+  function idle() {
+    idleTime += 1;
+
+    // every ~ 20 seconds
+    if (
+      idleTime > 10 &&
+      Math.floor(Math.random() * 50) == 0 &&
+      idleAnimation == null
+    ) {
+      let avalibleIdleAnimations = ["sleeping", "scratchSelf"];
+      if (nekoPosX < 32) {
+        avalibleIdleAnimations.push("scratchWallW");
+      }
+      if (nekoPosY < 32) {
+        avalibleIdleAnimations.push("scratchWallN");
+      }
+      if (nekoPosX > window.innerWidth - 32) {
+        avalibleIdleAnimations.push("scratchWallE");
+      }
+      if (nekoPosY > window.innerHeight - 32) {
+        avalibleIdleAnimations.push("scratchWallS");
+      }
+      idleAnimation =
+        avalibleIdleAnimations[
+          Math.floor(Math.random() * avalibleIdleAnimations.length)
+        ];
+    }
+
+    switch (idleAnimation) {
+      case "sleeping":
+        if (idleAnimationFrame < 8) {
+          setSprite("tired", 0);
+          break;
+        }
+        setSprite("sleeping", Math.floor(idleAnimationFrame / 4));
+        if (idleAnimationFrame > 192) {
+          resetIdleAnimation();
+        }
+        break;
+      case "scratchWallN":
+      case "scratchWallS":
+      case "scratchWallE":
+      case "scratchWallW":
+      case "scratchSelf":
+        setSprite(idleAnimation, idleAnimationFrame);
+        if (idleAnimationFrame > 9) {
+          resetIdleAnimation();
+        }
+        break;
+      default:
+        setSprite("idle", 0);
+        return;
+    }
+    idleAnimationFrame += 1;
+  }
+
+  function frame() {
+    frameCount += 1;
+    const diffX = nekoPosX - mousePosX;
+    const diffY = nekoPosY - mousePosY;
+    const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
+
+    if (distance < nekoSpeed || distance < 48) {
+      idle();
+      return;
+    }
+
+    idleAnimation = null;
+    idleAnimationFrame = 0;
+
+    if (idleTime > 1) {
+      setSprite("alert", 0);
+      // count down after being alerted before moving
+      idleTime = Math.min(idleTime, 7);
+      idleTime -= 1;
+      return;
+    }
+
+    direction = diffY / distance > 0.5 ? "N" : "";
+    direction += diffY / distance < -0.5 ? "S" : "";
+    direction += diffX / distance > 0.5 ? "W" : "";
+    direction += diffX / distance < -0.5 ? "E" : "";
+    setSprite(direction, frameCount);
+
+    nekoPosX -= (diffX / distance) * nekoSpeed;
+    nekoPosY -= (diffY / distance) * nekoSpeed;
+
+    nekoPosX = Math.min(Math.max(16, nekoPosX), window.innerWidth - 16);
+    nekoPosY = Math.min(Math.max(16, nekoPosY), window.innerHeight - 16);
+
+    nekoEl.style.left = `${nekoPosX - 16}px`;
+    nekoEl.style.top = `${nekoPosY - 16}px`;
+  }
+
+  create();
+})();
+</script><tw-passagedata pid="1" name="Creation of All" tags="" position="600,300" size="100,100">Creation of All
 Billions of years ago, in a ceaseless eternal void, there stood a figure, a shapeless undescribable figure. At this point, before the start, nameless and meaningless.
 
 As an unknowable, uncountable length of time passed it got bored, bored of all that it had. Time passed fleetingly with no meaning as it hatched a plan for self entertainment.
 
 In a grand flash of light it created the beginning aspects of all. Steel, Stone, Fire and Earth. It used these basic aspects to create a world of its own, The Over-Realm. A place where it had full control of its power.
 
-[[Early Life]]</tw-passagedata><tw-passagedata pid="2" name="Early Life" tags="" position="800,300" size="100,100">Early Life
+Continue following this line: [[Early Life]]
+Watch an unintended side effect of this chapter: [[Birth of Evil]] 
+</tw-passagedata><tw-passagedata pid="2" name="Early Life" tags="" position="800,300" size="100,100">Early Life
 It felt miserable in its world. It thought it had done all it could, to which it decided to add a new variable to this cosmic experiment. It created another sentient being, one with less power than it. Upon this creatures inception the vast god decided to create a form.
 
 This new god created a world, the first life and now its own identity, Aetherion. It then focused on a few more of its new creatures and gave them the ability to multiply and recreate themselves. Aetherion&#39;s physical body fit within the &quot;Male&quot; class of these creatures.
 
-Around this time was when </tw-passagedata><tw-passagedata pid="3" name="Elements and Machines" tags="" position="1000,700" size="100,100">Elements and Machines
+Around this time was when 
+
+[[Total Control]] </tw-passagedata><tw-passagedata pid="3" name="Elements and Machines" tags="" position="1600,500" size="100,100">Elements and Machines
 A long time ago, in a world forgotten by time, there stood a kingdom. A glorious kingom. The king had ordered for the elements of the world to be researched. An understanding of their mechanisms created. He desired this comprehension of the other-worldly power so that it may be used to better the kingdom.
 
 One day, in the middle of winter, the chief scientist ran through the doors of the throne room. &#39;Sire! We managed to capture the elements!&#39; the scientist cried out with an unbreakable excitement. The kings eyes filled not only with his original lust for power, but with greed. This power could make him so much money from threats sent to other kingdoms. 
 
 Shortly after this the king who demanded power would go missing, never seen again. The scientists left to their final project before the kingdom dissolved away back into the earth. The Elemental Machines. Gaurdians of the elements, created from the elements.
 
-Some say many years later a particular mechanic would use the original blueprints to make other mechanical monstrosities. But just like the king, this has never been seen, and the Elemental Machines faded into myth.</tw-passagedata><tw-passagedata pid="4" name="Social Split" tags="" position="800,700" size="100,100">Social Split
-[[Elements and Machines]] </tw-passagedata><tw-passagedata pid="5" name="A Gods Celebration" tags="" position="800,500" size="100,100">A Gods Celebration</tw-passagedata><tw-passagedata pid="6" name="Unfinished Lore" tags="" position="400,500" size="100,100">Political Shift: [[Plans for the future]] 
-Start of the terraria game [[Re-Beginning]] </tw-passagedata><tw-passagedata pid="7" name="Re-Beginning" tags="" position="600,900" size="100,100">Re-beginning
-[[Infection from Beyond]] </tw-passagedata><tw-passagedata pid="8" name="Infection from Beyond" tags="" position="800,900" size="100,100">Infection from Beyond</tw-passagedata><tw-passagedata pid="9" name="Story Starting Point" tags="" position="400,300" size="100,100">This html webstory will focus on the story and lore of the Metal X story
+Some say many years later a particular mechanic would use the original blueprints to make other mechanical monstrosities. But just like the king, this has never been seen, and the Elemental Machines faded into myth.</tw-passagedata><tw-passagedata pid="4" name="Social Split" tags="" position="1400,500" size="100,100">Social Split
+[[Elements and Machines]] </tw-passagedata><tw-passagedata pid="5" name="A Gods Celebration" tags="" position="1400,300" size="100,100">A Gods Celebration</tw-passagedata><tw-passagedata pid="6" name="Unfinished Lore" tags="" position="400,500" size="100,100">The currently unfinished lore of metal x</tw-passagedata><tw-passagedata pid="7" name="Re-Beginning" tags="" position="2000,300" size="100,100">Re-beginning
+[[Infection from Beyond]] </tw-passagedata><tw-passagedata pid="8" name="Infection from Beyond" tags="" position="2200,300" size="100,100">Infection from Beyond</tw-passagedata><tw-passagedata pid="9" name="Story Starting Point" tags="" position="400,300" size="100,100">This html webstory will focus on the story and lore of the Metal X story
 
 Metal X, Story Line 1: [[Creation of All]] 
 
-Unfinished story is here: [[Unfinished Lore]] </tw-passagedata><tw-passagedata pid="10" name="Plans for the future" tags="" position="600,500" size="100,100">[[A Gods Celebration]] 
-[[Social Split]] </tw-passagedata></tw-storydata>
+Metal X Story Line 2: [[Birth of Evil]] 
+
+Unfinished story is here: [[Unfinished Lore]] </tw-passagedata><tw-passagedata pid="10" name="Plans for the future" tags="" position="1200,300" size="100,100">[[A Gods Celebration]] 
+[[Social Split]] </tw-passagedata><tw-passagedata pid="11" name="Total Control" tags="" position="1000,300" size="100,100">Total Control
+
+[[Plans for the future]] </tw-passagedata><tw-passagedata pid="12" name="Birth of Evil" tags="" position="800,100" size="100,100">Birth of Evil
+
+[[Growth of Hatred]] </tw-passagedata><tw-passagedata pid="13" name="Growth of Hatred" tags="" position="1400,100" size="100,100">Growth of Hatred
+
+[[Horrific Tumorous Collision]] </tw-passagedata><tw-passagedata pid="14" name="Horrific Tumorous Collision" tags="" position="1900,100" size="100,100">Horrific Tumorous Collision
+
+[[Re-Beginning]] </tw-passagedata></tw-storydata>
 <script title="Twine engine code" data-main="harlowe">(function(){"use strict";
 var require,define;!function(){var e={},r={};require=function(i){var n=e[i];return n&&(r[i]=n[1].apply(void 0,n[0].map(require)),e[i]=void 0),r[i]},(define=function(r,i,n){if("function"==typeof r)return r();e[r]=[i,n]}).amd=!0}();/*!
  * https://github.com/paulmillr/es6-shim
