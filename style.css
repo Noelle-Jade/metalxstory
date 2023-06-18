@@ -6,8 +6,9 @@
 	line-height: normal;
 }
 .left {
-  display: block;
+  display: flex;
   margin-right: auto;
+  align-items: flex-start;
 }
 body {
   background-color: #666;
