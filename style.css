@@ -2,13 +2,9 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 10px;
+	gap: 20px;
 	line-height: normal;
-}
-.left {
-  display: flex;
-  margin-right: auto;
-  align-items: flex-start;
+   	padding: 20px;
 }
 body {
   background-color: #666;
